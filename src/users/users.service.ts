@@ -17,7 +17,11 @@ export class UsersService {
   }
 
   async findAll() {
-    return this.prismaService.user.findMany({ where: { role: "WORKER" } });
+    return this.prismaService.user.findMany({ where: { role: 'WORKER' } });
+  }
+
+  async findById(id: number) {
+    return this.prismaService.user.findFirst({ where: { id: id } });
   }
 
   async findUser(uuid: number) {

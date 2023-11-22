@@ -8,14 +8,14 @@ export enum workerKeyboardCommands {
 
 export enum adminKeyboardCommands {
   workers = 'Работники',
-  addNewWorker = 'Опубликовать заявку',
+  addRequest = 'Опубликовать заявку',
   requestsHistory = 'История заявок',
 }
 
 export const adminKeyboardBtns = [
   [
     adminKeyboardCommands.workers,
-    adminKeyboardCommands.addNewWorker,
+    adminKeyboardCommands.addRequest,
   ],
   [adminKeyboardCommands.requestsHistory],
 ];

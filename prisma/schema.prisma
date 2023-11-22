@@ -11,19 +11,32 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  uuid     Int
-  userName String
-  role     Role   @default(WORKER)
+  id               Int        @id @default(autoincrement())
+  uuid             Int
+  userName         String
+  role             Role       @default(WORKER)
+  createdRequests  Requests[] @relation("CreatedBy")
+  assignedRequests Requests[] @relation("AssignedTo")
 }
 
 model Requests {
-  id          Int     @id @default(autoincrement())
-  title       String
-  description String?
+  id           Int     @id @default(autoincrement())
+  title        String
+  description  String?
+  status       Status?
+  createdById  Int
+  assignedToId Int?
+  createdBy    User    @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
 }
 
 enum Role {
   WORKER
   ADMIN
+}
+
+enum Status {
+  SUCCESS
+  PROGRESS
+  FAILED
 }
