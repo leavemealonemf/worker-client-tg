@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 
 export enum workerKeyboardCommands {
   currentRequests = 'Текущие заявки',
+  currentWorkerRequests = 'Мои заявки',
   completedRequests = 'Завершенные заявки',
   stats = 'Статистика',
 }
@@ -15,7 +16,10 @@ export enum adminKeyboardCommands {
 export const adminKeyboardBtns = [
   [
     adminKeyboardCommands.workers,
-    adminKeyboardCommands.addRequest,
+    Markup.button.webApp(
+      adminKeyboardCommands.addRequest,
+      'https://worker-client-react.vercel.app/',
+    ),
   ],
   [adminKeyboardCommands.requestsHistory],
 ];
@@ -23,6 +27,7 @@ export const adminKeyboardBtns = [
 export const workerKeyboardBtns = [
   [
     workerKeyboardCommands.currentRequests,
+    workerKeyboardCommands.currentWorkerRequests,
     workerKeyboardCommands.completedRequests,
   ],
   [workerKeyboardCommands.stats],
@@ -31,5 +36,4 @@ export const workerKeyboard: Markup.Markup<any> =
   Markup.keyboard(workerKeyboardBtns).resize();
 
 export const adminKeyboard: Markup.Markup<any> =
-    Markup.keyboard(adminKeyboardBtns).resize();
-
+  Markup.keyboard(adminKeyboardBtns).resize();

@@ -11,7 +11,9 @@ export class RequestsService {
   ) {}
 
   async getRequests() {
-    return this.prismaService.requests.findMany();
+    return this.prismaService.requests.findMany({
+      where: { assignedToId: null },
+    });
   }
   async createRequest(dto: CreateRequestDto, userId: number) {
     const user = await this.userService.findById(userId);
@@ -26,6 +28,24 @@ export class RequestsService {
         description: dto.description,
         createdById: userId,
       },
+    });
+  }
+
+  async updateRequest(reqId: number, uuid: number) {
+    const user = await this.userService.findUser(uuid);
+
+    return this.prismaService.requests.update({
+      where: { id: reqId },
+      data: {
+        assignedToId: user.id,
+        status: 'PROGRESS',
+      },
+    });
+  }
+
+  async getCurrentWorkerRequests(id: number) {
+    return this.prismaService.requests.findMany({
+      where: { assignedToId: id },
     });
   }
 }

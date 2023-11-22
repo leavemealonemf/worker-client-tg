@@ -1,5 +1,5 @@
-import { Update, Ctx, Start, On, Message, Hears } from 'nestjs-telegraf';
-import { Telegraf } from 'telegraf';
+import { Update, Ctx, Start, On, Message } from 'nestjs-telegraf';
+import { Markup, Telegraf } from 'telegraf';
 import {
   adminKeyboard,
   workerKeyboard,
@@ -24,6 +24,7 @@ export class TelegramService extends Telegraf<Context> {
     private requestService: RequestsService,
     private keyboard: Keyboard,
   ) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     super();
   }
@@ -53,30 +54,41 @@ export class TelegramService extends Telegraf<Context> {
     }
   }
 
-  @Hears(adminKeyboardCommands.addRequest)
-  async addRequest(@Ctx() ctx: Context) {
-    await ctx.reply('Введите название заявки в чат');
-    ctx.session.type = 'done';
-  }
+  // @Hears(adminKeyboardCommands.addRequest)
+  // async addRequest(@Ctx() ctx: Context) {
+  //
+  //   ctx.session.type = 'done';
+  // }
 
   @On('text')
   async onSendMessage(@Message('text') message: string, @Ctx() ctx: Context) {
-    let user;
-    const cachedUser = await this.cacheManager.get('user');
-    if (!cachedUser) {
-      user = await this.userService.findUser(ctx.from.id);
-      await this.cacheManager.set('user', user);
-    } else {
-      user = cachedUser;
-    }
+    const user = await this.userService.findUser(ctx.from.id);
 
     if (user.role === 'WORKER') {
       if (message === workerKeyboardCommands.stats) {
-        ctx.replyWithHTML(this.messageService.sendStats(2, 2));
+        await ctx.replyWithHTML(this.messageService.sendStats(2, 2));
       } else if (message === workerKeyboardCommands.currentRequests) {
         const requests = await this.requestService.getRequests();
         requests.forEach((request) => {
-          ctx.replyWithHTML(`<b>Заявка</b>: ${request.title}`);
+          ctx.replyWithHTML(
+            `<b>Заявка</b>: ${request.title}`,
+            Markup.inlineKeyboard([
+              [{ text: 'Взять заявку', callback_data: request.id.toString() }],
+            ]),
+          );
+        });
+      } else if (message === workerKeyboardCommands.currentWorkerRequests) {
+        const requests = await this.requestService.getCurrentWorkerRequests(
+          user.id,
+        );
+        if (requests.length === 0) {
+          ctx.reply('В данный момент у Вас нет активных заявок');
+          return;
+        }
+        requests.forEach((request) => {
+          ctx.replyWithHTML(
+            `Заявка <b>${request.title}</b> в процессе выполниения 🎯`,
+          );
         });
       } else {
         ctx.reply(`${message} - Я не знаю такой команды`);
@@ -89,24 +101,36 @@ export class TelegramService extends Telegraf<Context> {
           Username: ${worker.userName}
           `);
         });
-      } else if (ctx.session.type === 'done') {
-        const res = await this.requestService.createRequest(
-          {
-            title: message,
-            createdById: user.id,
-          },
-          user.id,
-        );
-        if (res) {
-          ctx.replyWithHTML(`<b>Заявка:</b> '${message}' - успешно создана ✅`);
-        } else {
-          ctx.replyWithHTML(
-            `<b>Заявка:</b> '${message}' - не удалось создать заявку ❌`,
-          );
-        }
+      } else if (adminKeyboardCommands.addRequest) {
+        // const res = await this.requestService.createRequest(
+        //   {
+        //     title: message,
+        //     createdById: user.id,
+        //   },
+        //   user.id,
+        // );
+        // if (res) {
+        //   ctx.replyWithHTML(`<b>Заявка:</b> '${message}' - успешно создана ✅`);
+        // } else {
+        //   ctx.replyWithHTML(
+        //     `<b>Заявка:</b> '${message}' - не удалось создать заявку ❌`,
+        //   );
+        // }
       } else {
         ctx.reply(`${message} - Я не знаю такой команды`);
       }
+    }
+  }
+
+  @On('callback_query')
+  async editKeyboard(@Ctx() ctx: Context) {
+    await ctx.editMessageText(
+      'Заявка успешно взята, номер телефона: +786875765',
+    );
+    if ('data' in ctx.callbackQuery) {
+      const requestId = Number(ctx.callbackQuery.data);
+      const uuid = ctx.callbackQuery.from.id;
+      await this.requestService.updateRequest(requestId, uuid);
     }
   }
 }
