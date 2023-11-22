@@ -20,11 +20,14 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^2.1.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^3.1.1",
     "@nestjs/core": "^9.0.0",
     "@nestjs/platform-express": "^9.0.0",
     "@prisma/client": "^5.6.0",
+    "cache-manager": "^5.3.1",
+    "cache-manager-redis-yet": "^4.1.2",
     "nestjs-telegraf": "^2.7.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
