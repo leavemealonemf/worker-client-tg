@@ -8,6 +8,7 @@ import { RequestsModule } from './requests/requests.module';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), TelegramModule, MessagesModule, UsersModule, RequestsModule],
+  controllers: [],
   providers: [PrismaService],
 })
 export class AppModule {}
