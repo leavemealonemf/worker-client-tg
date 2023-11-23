@@ -66,14 +66,19 @@ export class TelegramService extends Telegraf<Context> {
 
     if (user.role === 'WORKER') {
       if (message === workerKeyboardCommands.stats) {
-        await ctx.replyWithHTML(this.messageService.sendStats(2, 2));
+        await ctx.replyWithHTML(await this.messageService.sendStats(user.id));
       } else if (message === workerKeyboardCommands.currentRequests) {
         const requests = await this.requestService.getRequests();
         requests.forEach((request) => {
           ctx.replyWithHTML(
             `<b>Заявка</b>: ${request.title}`,
             Markup.inlineKeyboard([
-              [{ text: 'Взять заявку', callback_data: request.id.toString() }],
+              [
+                {
+                  text: 'Взять заявку',
+                  callback_data: 'take ' + request.id.toString(),
+                },
+              ],
             ]),
           );
         });
@@ -82,16 +87,38 @@ export class TelegramService extends Telegraf<Context> {
           user.id,
         );
         if (requests.length === 0) {
-          ctx.reply('В данный момент у Вас нет активных заявок');
+          await ctx.reply('В данный момент у Вас нет активных заявок');
           return;
         }
         requests.forEach((request) => {
           ctx.replyWithHTML(
             `Заявка <b>${request.title}</b> в процессе выполниения 🎯`,
+            Markup.inlineKeyboard([
+              [
+                {
+                  text: 'Выполнена✅',
+                  callback_data: 'done ' + request.id.toString(),
+                },
+                {
+                  text: 'Отменить❌',
+                  callback_data: 'cancel ' + request.id.toString(),
+                },
+              ],
+            ]),
           );
         });
+      } else if (message === workerKeyboardCommands.completedRequests) {
+        const requests =
+          await this.requestService.getCurrentWorkerCompletedRequests(user.id);
+        if (requests.length === 0) {
+          await ctx.reply('В данный момент у Вас нет выполненных заявок');
+          return;
+        }
+        requests.forEach((request) => {
+          ctx.replyWithHTML(`Заявка <b>${request.title}</b> выполнена ✅`);
+        });
       } else {
-        ctx.reply(`${message} - Я не знаю такой команды`);
+        await ctx.reply(`${message} - Я не знаю такой команды`);
       }
     } else {
       if (message === adminKeyboardCommands.workers) {
@@ -117,20 +144,31 @@ export class TelegramService extends Telegraf<Context> {
         //   );
         // }
       } else {
-        ctx.reply(`${message} - Я не знаю такой команды`);
+        await ctx.reply(`${message} - Я не знаю такой команды`);
       }
     }
   }
 
   @On('callback_query')
   async editKeyboard(@Ctx() ctx: Context) {
-    await ctx.editMessageText(
-      'Заявка успешно взята, номер телефона: +786875765',
-    );
     if ('data' in ctx.callbackQuery) {
-      const requestId = Number(ctx.callbackQuery.data);
+      const data = ctx.callbackQuery.data;
       const uuid = ctx.callbackQuery.from.id;
-      await this.requestService.updateRequest(requestId, uuid);
+      const trigger = data.split(' ')[0];
+      const requestId = Number(data.split(' ')[1]);
+      console.log(requestId);
+      if (trigger === 'take') {
+        await this.requestService.updateRequest(requestId, uuid, 'PROGRESS');
+        await ctx.editMessageText(
+          'Заявка успешно взята, номер телефона: +786875765',
+        );
+        return;
+      }
+      if (trigger === 'done') {
+        await this.requestService.updateRequest(requestId, uuid, 'SUCCESS');
+        await ctx.editMessageText('Заявка успешно выполнена!');
+        return;
+      }
     }
   }
 }

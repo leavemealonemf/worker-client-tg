@@ -10,6 +10,12 @@ export class RequestsService {
     private userService: UsersService,
   ) {}
 
+  async getRequestStats(id: number){
+    return this.prismaService.requests.findMany({where: {assignedToId: id}, select: {
+      status: true,
+      }})
+  }
+
   async getRequests() {
     return this.prismaService.requests.findMany({
       where: { assignedToId: null },
@@ -31,21 +37,27 @@ export class RequestsService {
     });
   }
 
-  async updateRequest(reqId: number, uuid: number) {
+  async updateRequest(reqId: number, uuid: number, status: any) {
     const user = await this.userService.findUser(uuid);
 
     return this.prismaService.requests.update({
       where: { id: reqId },
       data: {
         assignedToId: user.id,
-        status: 'PROGRESS',
+        status: status,
       },
     });
   }
 
   async getCurrentWorkerRequests(id: number) {
     return this.prismaService.requests.findMany({
-      where: { assignedToId: id },
+      where: { assignedToId: id, status: 'PROGRESS' },
+    });
+  }
+
+  async getCurrentWorkerCompletedRequests(id: number) {
+    return this.prismaService.requests.findMany({
+      where: { assignedToId: id, status: 'SUCCESS' },
     });
   }
 }
